@@ -6,10 +6,9 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"strings"
 )
 
-var port string = ":9000"
+var port string = "9000"
 var dir string = "."
 
 func GetOutboundIP() net.IP {
@@ -34,9 +33,7 @@ func main() {
 	DefineFlags()
 
 	//correctly format user supplied port number
-	if !strings.HasPrefix(port, ":") {
-		port = ":" + port
-	}
+	port = ":" + port
 
 	//print directory being hosted
 	if dir == "." {
