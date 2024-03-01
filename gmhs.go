@@ -10,6 +10,7 @@ import (
 
 var port string = "9000"
 var dir string = "."
+var upload string
 
 func GetOutboundIP() net.IP {
 	conn, err := net.Dial("udp", "8.8.8.8:80")
@@ -26,6 +27,8 @@ func GetOutboundIP() net.IP {
 func DefineFlags() {
 	flag.StringVar(&dir, "dir", dir, "root directory")
 	flag.StringVar(&port, "port", port, "your port")
+	flag.StringVar(&upload, "upload", upload, "upload folder")
+
 	flag.Parse()
 }
 
@@ -59,6 +62,17 @@ func main() {
 	//configure and start server
 	fs := http.FileServer(http.Dir(dir))
 	http.Handle("/", fs)
+
+	//create and start sharing directory for uploads
+	if len(upload) > 0 {
+		err := os.Mkdir(upload, 0222)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fsu := http.FileServer(http.Dir(upload))
+		http.Handle("/upload", fsu)
+		log.Printf("upload directory at %s", upload)
+	}
 
 	ip := GetOutboundIP().String()
 
