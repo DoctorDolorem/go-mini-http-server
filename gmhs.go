@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -33,10 +34,6 @@ func DefineFlags() {
 }
 func receiveFile(uploadDir string) {
 	http.HandleFunc("/"+uploadDir, func(w http.ResponseWriter, r *http.Request) {
-		//check if the request is of method type POST
-		if r.Method != "POST" {
-			http.Error(w, "This page is only for file uploads", http.StatusMethodNotAllowed)
-		}
 		//parse the multipart form in the request
 		err := r.ParseMultipartForm(20 << 20)
 		if err != nil {
@@ -49,9 +46,20 @@ func receiveFile(uploadDir string) {
 			return
 		}
 		defer file.Close()
+		f, err := os.OpenFile(uploadDir+"/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer f.Close()
+		_, err = io.Copy(f, file)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 		log.Print("file received: ", handler.Filename)
 
-		http.ResponseWriter.Write(w, []byte("file uploaded: "+handler.Filename))
 	})
 }
 func main() {
