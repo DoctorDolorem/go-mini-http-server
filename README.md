@@ -9,4 +9,8 @@
 # Usage
 By default, the server listens on port 9000 and starts from the current directory it's executed from.
 
+To upload files, you can use cURL. The upload  form is named "file".
+
+curl -F "file=@/path/to/file" <URL>
+
 
