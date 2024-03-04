@@ -65,19 +65,26 @@ func main() {
 
 	//create and start sharing directory for uploads
 	if len(upload) > 0 {
+
 		err := os.Mkdir(upload, 0222)
+
 		if err != nil {
+
 			log.Fatal(err)
+
 		}
+
 		fsu := http.FileServer(http.Dir(upload))
+
 		http.Handle("/upload", fsu)
+
 		log.Printf("upload directory at %s", upload)
+
+		ip := GetOutboundIP().String()
+
+		log.Printf("listening on: %s %s", ip, port)
+
+		log.Fatal(http.ListenAndServe(port, nil))
+
 	}
-
-	ip := GetOutboundIP().String()
-
-	log.Printf("listening on: %s %s", ip, port)
-
-	log.Fatal(http.ListenAndServe(port, nil))
-
 }
