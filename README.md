@@ -2,7 +2,7 @@
 
 | Flag  | Description                  | Example                   |
 |-------|------------------------------|---------------------------|
-| -port | Define the port to listen on | -port "1234"        |
+| -port | Define the port to listen on | -port 1234        |
 | -dir  | Define the root directory  | -dir "C:\Users\Docs"
 | -upload | Define upload directory | -upload myuploads 
 
