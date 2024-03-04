@@ -31,7 +31,29 @@ func DefineFlags() {
 
 	flag.Parse()
 }
+func receiveFile(uploadDir string) {
+	http.HandleFunc("/"+uploadDir, func(w http.ResponseWriter, r *http.Request) {
+		//check if the request is of method type POST
+		if r.Method != "POST" {
+			http.Error(w, "This page is only for file uploads", http.StatusMethodNotAllowed)
+		}
+		//parse the multipart form in the request
+		err := r.ParseMultipartForm(20 << 20)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		file, handler, err := r.FormFile("file")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer file.Close()
+		log.Print("file received: ", handler.Filename)
 
+		http.ResponseWriter.Write(w, []byte("file uploaded: "+handler.Filename))
+	})
+}
 func main() {
 	DefineFlags()
 
@@ -65,18 +87,12 @@ func main() {
 
 	//create and start sharing directory for uploads
 	if len(upload) > 0 {
-
 		err := os.Mkdir(upload, 0222)
-
 		if err != nil {
-
 			log.Fatal(err)
-
 		}
 
-		fsu := http.FileServer(http.Dir(upload))
-
-		http.Handle("/upload", fsu)
+		receiveFile(upload)
 
 		log.Printf("upload directory at %s", upload)
 
@@ -84,7 +100,7 @@ func main() {
 
 		log.Printf("listening on: %s %s", ip, port)
 
-		log.Fatal(http.ListenAndServe(port, nil))
-
 	}
+	//start server
+	log.Fatal(http.ListenAndServe(port, nil))
 }
