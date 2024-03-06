@@ -100,7 +100,7 @@ func main() {
 		}
 	}
 
-	//configure and start server
+	//configure file server at root
 	fs := http.FileServer(http.Dir(dir))
 	http.Handle("/", fs)
 
@@ -116,6 +116,7 @@ func main() {
 	}
 
 	log.Printf("listening on: %s %s", ip, port)
+
 	//start server
 	log.Fatal(http.ListenAndServe(port, nil))
 }
