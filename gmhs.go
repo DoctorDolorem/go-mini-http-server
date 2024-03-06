@@ -61,21 +61,22 @@ func receiveFile(uploadDir string) {
 			return
 		}
 		defer dst.Close()
+
 		//copy the uploaded file to the created file on the filesystem
 		if _, err := io.Copy(dst, file); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
+		//format file size and print success message
 		fileSize := strconv.FormatFloat(float64(handler.Size)/1048576.0, 'f', 2, 64)
-		success := []byte("file received: " + handler.Filename + " with size: " + fileSize + " Megabytes")
-		http.ResponseWriter.Write(w, success)
+		http.ResponseWriter.Write(w, []byte("file received: "+handler.Filename+" with size: "+fileSize+" Megabytes"))
 	})
 }
 func main() {
 	DefineFlags()
 
-	//correctly format user supplied port number
+	//correctly format user supplied port number and get local IP address
 	port = ":" + port
 	ip := GetOutboundIP().String()
 
