@@ -2,10 +2,13 @@ package main
 
 import (
 	"flag"
+	"io"
 	"log"
 	"net"
 	"net/http"
 	"os"
+	"path"
+	"strconv"
 )
 
 var port string = "9000"
@@ -51,7 +54,22 @@ func receiveFile(uploadDir string) {
 		defer file.Close()
 		log.Print("file received: ", handler.Filename)
 
-		http.ResponseWriter.Write(w, []byte("file uploaded: "+handler.Filename))
+		//create a new file in the upload directory
+		dst, err := os.Create(uploadDir + "/" + handler.Filename)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer dst.Close()
+		//copy the uploaded file to the created file on the filesystem
+		if _, err := io.Copy(dst, file); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		fileSize := strconv.FormatFloat(float64(handler.Size)/1048576.0, 'f', 2, 64)
+		success := []byte("file received: " + handler.Filename + " with size: " + fileSize + " Megabytes")
+		http.ResponseWriter.Write(w, success)
 	})
 }
 func main() {
@@ -59,6 +77,7 @@ func main() {
 
 	//correctly format user supplied port number
 	port = ":" + port
+	ip := GetOutboundIP().String()
 
 	//print directory being hosted
 	if dir == "." {
@@ -91,16 +110,12 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-
 		receiveFile(upload)
-
-		log.Printf("upload directory at %s", upload)
-
-		ip := GetOutboundIP().String()
-
-		log.Printf("listening on: %s %s", ip, port)
+		log.Printf("upload directory at %s", path.Join(ip+port, upload))
 
 	}
+
+	log.Printf("listening on: %s %s", ip, port)
 	//start server
 	log.Fatal(http.ListenAndServe(port, nil))
 }
