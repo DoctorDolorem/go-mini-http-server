@@ -26,40 +26,6 @@ func defineFlags() {
 	flag.Parse()
 }
 
-func validateShareDir() error {
-	if dir == "current directory" {
-		dir, err := os.Getwd()
-		if err != nil {
-			fmt.Println("Error getting current directory")
-			return err
-		}
-		fmt.Printf("Serving files from current directory: %s\n", dir)
-	} else {
-		if _, err := os.Stat(dir); errors.Is(err, fs.ErrNotExist) {
-			fmt.Println("Error Validating Share Directory")
-			fmt.Printf("Directory %s does not exist\n", dir)
-			return err
-		}
-		fmt.Printf("Serving files from directory: %s\n", dir)
-	}
-	return nil
-}
-
-func validateUploadDir() error {
-	if _, err := os.Stat(upload); errors.Is(err, fs.ErrNotExist) {
-		fmt.Printf("Upload directory '%s' does not exist... creating it\n", upload)
-		err := os.Mkdir(upload, 0222)
-		if err != nil {
-			fmt.Printf("Error creating directory %s\n", upload)
-			return err
-		}
-
-	} else {
-		fmt.Printf("Upload directory at: %s\n", filepath.Dir(upload))
-	}
-	return nil
-}
-
 func validateDirectories() error {
 	if dir == "current directory" {
 		dir, _ = os.Getwd()
@@ -82,9 +48,10 @@ func validateDirectories() error {
 				fmt.Print("Error:", err)
 				return err
 			}
-			fmt.Printf("upload directory at URL: %s\n", path.Join("localhost:"+port, filepath.Base(upload)))
+			//fmt.Printf("upload directory at URL: %s\n", path.Join("localhost:"+port, filepath.Base(upload)))
+			fmt.Printf("upload directory at URL: %s\n", path.Join("localhost:"+port, "upload"))
 		} else {
-			fmt.Printf("Upload directory at: %s\n", filepath.Dir(upload))
+			fmt.Printf("Upload directory at: FULL PATH HERE%s\n", filepath.Dir(upload))
 		}
 	}
 	return nil
@@ -103,28 +70,26 @@ func grabIP() (string, error) {
 func main() {
 	defineFlags()
 
-	err := validateShareDir()
+	err := validateDirectories()
 	if err != nil {
-		fmt.Println(err)
+		fmt.Print("Error:", err)
 		os.Exit(1)
 	}
-
-	err = validateUploadDir()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", http.FileServer(http.Dir(dir)).ServeHTTP)
+
+	if upload != "" {
+		mux.HandleFunc("/upload", func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte("Upload page"))
+		})
+	}
 
 	ip, err := grabIP()
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Printf("upload directory at URL: %s\n", path.Join("localhost:"+port, filepath.Base(upload)))
 
-	fmt.Printf("Listening on: %s:%s\n", ip, port)
+	fmt.Printf("Available at: http://%s:%s\n", ip, port)
 	http.ListenAndServe(":"+port, mux)
 }
