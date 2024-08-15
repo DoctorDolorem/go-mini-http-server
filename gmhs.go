@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"io/fs"
 	"log"
 	"net"
@@ -71,35 +72,73 @@ func grabIP() (string, error) {
 	conn.Close()
 	return ip, nil
 }
+
 func uploadPage(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Upload page"))
+	switch r.Method {
+	case "GET":
+		w.Write([]byte("upload page"))
+
+	case "POST":
+		uploadFile(w, r)
+	}
+}
+
+func uploadFile(w http.ResponseWriter, r *http.Request) {
+	file, handler, err := r.FormFile("file")
+	if err != nil {
+		fmt.Println("Error retrieving file")
+		fmt.Println(err)
+		return
+	}
+	defer file.Close()
+
+	f, err := os.OpenFile(upload+"/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		log.Println("Error creating file:", err)
+		w.Write([]byte("Error uploading file"))
+		w.Write([]byte(err.Error()))
+		return
+	}
+	w.Write([]byte("File uploaded: " + handler.Filename + "\n"))
+	log.Printf("File uploaded: %s\n", handler.Filename)
+	defer f.Close()
+
+	_, err = io.Copy(f, file)
+	if err != nil {
+		log.Println("Error copying file:", err)
+		w.Write([]byte("Error uploading file"))
+		w.Write([]byte(err.Error()))
+		return
+	}
+	w.Write([]byte("File uploaded successfully: " + handler.Filename + "\n"))
+	log.Printf("File uploaded successfully: %s\n", handler.Filename)
 }
 
 func main() {
 	defineFlags()
 
-	if err := validateShareDir(); err != nil {
+	err := validateShareDir()
+	if err != nil {
 		log.Fatal(err)
 	}
 
 	mux := http.NewServeMux()
-
 	mux.HandleFunc("/", http.FileServer(http.Dir(dir)).ServeHTTP)
-
-	if upload != "" {
-		if err := validateUploadDir(); err != nil {
-			log.Printf("Error validating upload directory: %w\n", err)
-		}
-		mux.HandleFunc("/upload", uploadPage)
-	}
 
 	ip, err := grabIP()
 	if err != nil {
 		ip = "localhost"
-		log.Printf("Error grabbing IP %w\n", err)
+		fmt.Println("Error grabbing IP", err)
+	}
+	fmt.Printf("Available at: http://%s:%s\n", ip, port)
+
+	if upload != "" {
+		if err := validateUploadDir(); err != nil {
+			log.Println("Error validating upload directory:", err)
+		}
+		mux.HandleFunc("/upload", uploadPage)
+		fmt.Printf("Upload at: http://%s:%s/upload\n", ip, port)
 	}
 
-	fmt.Printf("Available at: http://%s:%s\n", ip, port)
-	fmt.Printf("Upload at: http://%s:%s/upload\n", ip, port)
 	http.ListenAndServe(":"+port, mux)
 }
