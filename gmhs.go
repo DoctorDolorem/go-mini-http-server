@@ -22,7 +22,6 @@ func defineFlags() {
 	flag.StringVar(&dir, "dir", dir, "root directory")
 	flag.StringVar(&port, "port", port, "your port")
 	flag.StringVar(&upload, "upload", upload, "upload folder")
-
 	flag.Parse()
 }
 
