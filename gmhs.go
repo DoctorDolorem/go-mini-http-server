@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"flag"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 var (
@@ -140,5 +142,17 @@ func main() {
 		fmt.Printf("Upload at: http://%s:%s/upload\n", ip, port)
 	}
 
-	http.ListenAndServe(":"+port, mux)
+	go http.ListenAndServe(":"+port, mux)
+
+	fmt.Fprint(os.Stdout, "Press Enter to exit ")
+	reader := bufio.NewReader(os.Stdin)
+	input, err := reader.ReadString('\n')
+	if err != nil {
+		fmt.Println("Error reading input")
+	}
+	input = strings.TrimSpace(input)
+	if input == "" {
+		os.Exit(0)
+	}
+
 }
